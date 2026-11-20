@@ -1,0 +1,12 @@
+[package]
+name = "dread-proto"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "DREAD wire protocol: framing, control messages, input and video payloads"
+
+[dependencies]
+anyhow.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true }
+sha2.workspace = true

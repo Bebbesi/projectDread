@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["crates/dread-proto", "crates/dread-core", "crates/dread-platform", "crates/dread-app", "crates/dread-testclient"]
+
+[workspace.package]
+publish = false
+version = "1.0.0"
+edition = "2021"
+
+[workspace.dependencies]
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "io-util", "time", "sync", "signal"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"
+rand = "0.9"
+libc = "0.2"
+parking_lot = "0.12"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true

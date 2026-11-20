@@ -1,0 +1,25 @@
+[package]
+name = "dread-app"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "DREAD Server: virtual display host with control panel"
+
+[[bin]]
+name = "dread"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+tokio.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+parking_lot.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "registry"] }
+dread-core = { path = "../dread-core" }
+dread-platform = { path = "../dread-platform" }
+dread-proto = { path = "../dread-proto" }
+egui = { version = "0.31", default-features = false }
+eframe = { version = "0.31", default-features = false, features = ["glow", "wayland", "x11", "default_fonts"] }
+qrcode = { version = "0.14", default-features = false }
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }

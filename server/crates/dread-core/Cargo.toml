@@ -1,0 +1,33 @@
+[package]
+name = "dread-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "DREAD engine: configuration, security, transport, sessions, streaming pipeline"
+
+[dependencies]
+anyhow.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+sha2.workspace = true
+hex.workspace = true
+base64.workspace = true
+rand.workspace = true
+parking_lot.workspace = true
+dread-proto = { path = "../dread-proto" }
+dread-platform = { path = "../dread-platform" }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "tls12", "std", "logging"] }
+rcgen = { version = "0.14", default-features = false, features = ["ring", "pem", "crypto"] }
+mdns-sd = "0.13"
+rusb = "0.9"
+directories = "6"
+uuid = { version = "1", features = ["v4"] }
+socket2 = "0.6"
+if-addrs = "0.13"
+subtle = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true

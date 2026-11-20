@@ -1,0 +1,5 @@
+# DREAD: the DREAD Pen device already delivers the Android digitizer's
+# samples; libinput's extra tablet smoothing would only add latency.
+[DREAD Pen]
+MatchName=DREAD Pen
+AttrTabletSmoothing=0

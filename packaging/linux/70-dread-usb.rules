@@ -1,0 +1,10 @@
+# DREAD: let the logged-in user open Android devices over USB so DREAD can
+# switch them into Android Open Accessory mode (no USB debugging needed).
+
+# Phones/tablets exposing MTP or PTP (default "File transfer"/"Photos" modes)
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:060101:*", TAG+="uaccess"
+# Devices exposing a vendor-specific Android interface (e.g. "No data transfer" with ADB/MTP vendor class)
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:ff4201:*", TAG+="uaccess"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:ffff00:*", TAG+="uaccess"
+# Android Open Accessory mode (after the switch)
+SUBSYSTEM=="usb", ATTR{idVendor}=="18d1", ATTR{idProduct}=="2d0[0-5]", TAG+="uaccess"

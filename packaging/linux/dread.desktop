@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=DREAD
+GenericName=Virtual Display Server
+Comment=Use an Android device as an additional monitor
+Exec=dread
+Icon=dread
+Terminal=false
+Categories=Utility;System;
+Keywords=monitor;display;tablet;second screen;android;
+StartupWMClass=dread
