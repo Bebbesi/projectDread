@@ -74,7 +74,23 @@ keyboard…* on the computer and *Settings → Virtual keyboard* on the device.
 
 The Virtual Display Driver is not installed: re-run the installer with the
 driver option, or run `driver-tools\install-driver.ps1` as administrator.
-Duplicate mode works without it.
+Duplicate mode works without it. The script logs to
+`C:\Program Files\DREAD\driver-tools\install-driver.log`.
+
+## Windows: "installed but has no monitor" or `ChangeDisplaySettingsEx … DISP_CHANGE(-1)`
+
+The driver loaded but Windows rejected its monitor, almost always because
+`C:\VirtualDisplayDriver\vdd_settings.xml` lists too many modes (keep it
+under ~48 resolution × refresh combinations). Fix the file, then restart the
+*Virtual Display Driver* device in Device Manager (or
+`pnputil /restart-device "ROOT\DISPLAY\0002"` elevated). To see the driver's
+own log, enable `<logging>true</logging>` in the same file; logs go to
+`C:\VirtualDisplayDriver\Logs`.
+
+## Windows: `ChangeDisplaySettingsEx(\\.\DISPLAYn) failed: DISP_CHANGE(-5)`
+
+An outdated `dread.exe` is using a display name from before the driver
+restarted. Update DREAD (quit it before running the installer).
 
 ## Windows got a monitor but the picture is black
 

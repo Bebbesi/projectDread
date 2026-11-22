@@ -55,26 +55,37 @@ is the main planned optimisation for 4K.
 Binaries built on a recent distribution need a glibc at least as new as the
 build host; build release AppImages on the oldest distribution you support.
 
-## Windows 10/11 (implemented, NOT compiled or tested)
+## Windows 10/11 (Extend + Duplicate verified; input not yet verified)
 
-The Windows code paths exist and follow the Win32 documentation, but no
-Windows machine or cross-compiler was available, so they have never been
-compiled. Expect compile fixes on first build.
+Built and run on Windows 11 Pro (build 26200) with an NVIDIA RTX 4060 Ti;
+Extend and Duplicate stream to a Samsung Galaxy S23 (SCG19). See
+[TESTING.md](TESTING.md#server-on-windows) for exactly what was checked.
 
 * **Driver** — bundles the signed, MIT-licensed *Virtual Display Driver*
   (IddCx, hardware id `Root\MttVDD`, release 25.7.23). The installer copies
-  `vdd_settings.xml` (one monitor; desktop modes plus common phone/tablet
-  panels in both orientations; 30/60/90/120 Hz) to `C:\VirtualDisplayDriver`
-  and creates the device with nefcon.
+  `vdd_settings.xml` to `C:\VirtualDisplayDriver`, creates the device node
+  with nefcon and installs the driver with `pnputil` (log:
+  `C:\Program Files\DREAD\driver-tools\install-driver.log`).
+* **Mode list must stay small** — the settings file has one monitor with 16
+  resolutions (common desktop, tablet and phone panels, both orientations) at
+  60/120 Hz = 32 modes. With ~88 or more modes Windows rejects the monitor
+  (driver log: *Failed to report monitor arrival*, `STATUS_NOT_SUPPORTED`)
+  and Extend fails; 48 modes was tested OK.
 * **Extend** — attaches the driver's monitor with `ChangeDisplaySettingsExW`
   (mode, refresh, position, optional *primary*); detaches it (zero-size mode)
   when streaming stops. Windows lists it in Settings → Display like any monitor.
-  Requested resolutions snap to the closest mode in the driver's list.
+  Requested resolutions snap to the closest mode in the driver's list. The
+  monitor's GDI name (`\\.\DISPLAYn`) changes every time the driver restarts,
+  so it is looked up again on each attach.
 * **Capture/encode** — FFmpeg `ddagrab` (DXGI Desktop Duplication, GPU frames)
   into NVENC / AMF / Quick Sync, or software x264.
-* **Input** — synthetic pointer devices (`InjectSyntheticPointerInput`, Windows
-  10 1809+) for touch and pen (pressure, tilt, eraser, barrel, hover → Windows
-  Ink), `SendInput` for mouse, wheel, scan-code keys and Unicode text.
+* **Input** — touch through `InjectTouchInput` (virtual-desktop pixels, works
+  on any monitor; verified). Pen through a synthetic pointer device
+  (`InjectSyntheticPointerInput`, Windows 10 1809+): **unverified**, and
+  Windows binds synthetic devices to the primary monitor (this broke touch on
+  the DREAD display before the switch), so pen may land on the primary
+  monitor. Pen carries pressure, tilt, eraser, barrel and hover (Windows
+  Ink). `SendInput` for mouse, wheel, scan-code keys and Unicode text.
 * **Limitations** — duplicate mode needs no driver; adaptive bitrate restarts
   FFmpeg (as on Linux); text-field detection for the automatic Android
   keyboard is Linux-only (use the keyboard button).

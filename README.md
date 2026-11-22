@@ -21,14 +21,14 @@ uinput / Windows pointer injection  ◄──  touch · pen · mouse · keyboard
 
 | | Linux — Hyprland | Linux — Sway | Linux — GNOME/KDE/X11 | Windows 10/11 | Android client |
 |---|---|---|---|---|---|
-| Extended display | **verified** | implemented, untested | not implemented | implemented, **not compiled/tested** | — |
-| Duplicate display | **verified** | implemented, untested | not implemented | implemented, not compiled/tested | — |
-| Capture + hardware encode | **verified** (VA-API, x264) | implemented, untested | — | implemented (ddagrab + NVENC/AMF/QSV), not tested | **verified** (Qualcomm low-latency decoder) |
-| Wi-Fi/LAN, pairing, TLS | **verified** | same code | — | same code | **verified** on Android 16 |
-| USB (no USB debugging) | **verified** (AOA) | same code | — | libusb code compiles only on Linux so far | **verified** |
+| Extended display | **verified** | implemented, untested | not implemented | **verified** (Windows 11, Galaxy S23) | — |
+| Duplicate display | **verified** | implemented, untested | not implemented | **verified** | — |
+| Capture + hardware encode | **verified** (VA-API, x264) | implemented, untested | — | **verified** streaming to the phone; NVENC H.264/HEVC/AV1 probed OK (AMF/QSV untested) | **verified** (Qualcomm low-latency decoder) |
+| Wi-Fi/LAN, pairing, TLS | **verified** | same code | — | pairing + TLS **verified**; transport (Wi-Fi vs USB) not recorded | **verified** on Android 16 |
+| USB (no USB debugging) | **verified** (AOA) | same code | — | compiles and runs; streaming over USB not verified (see [docs/USB.md](docs/USB.md)) | **verified** |
 | Mouse / pointer input | **verified** (pixel-exact) | implemented, untested | — | implemented, not tested | **verified** (touch → mouse mode) |
-| Multitouch, pen, keys, Unicode text | devices created and events injected; pen position verified; delivery into apps **not yet verified**¹ | implemented, untested | — | implemented, not tested | implemented; stylus untested (no stylus device) |
-| Packaging | release binary built; AppImage script ready² | | | installer script ready, not built | **signed APK built** |
+| Multitouch, pen, keys, Unicode text | devices created and events injected; pen position verified; delivery into apps **not yet verified**¹ | implemented, untested | — | touch **verified** on the DREAD display (pixel-exact, multi-contact frames accepted); pen, keys, text not tested | implemented; stylus untested (no stylus device) |
+| Packaging | release binary built; AppImage script ready² | | | **installer built and installed** (driver install verified) | **signed APK built** |
 
 ¹ Verifying that apps receive touch, pressure, keys and text needs a test
 window on the DREAD display and was not done on the development machine (it

@@ -1,60 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- DREAD: settings for the bundled Virtual Display Driver (MttVDD).
-     One monitor; desktop modes plus common phone/tablet panels in both
-     orientations. Global refresh rates apply to every resolution. -->
+     One monitor; common desktop, tablet and phone panels in both orientations.
+     Global refresh rates apply to every resolution.
+     KEEP THE LIST SHORT: every resolution x refresh rate is one monitor mode,
+     and with too many modes (~88 tested) Windows rejects the monitor
+     ("Failed to report monitor arrival", STATUS_NOT_SUPPORTED) and the
+     DREAD display cannot attach. 32 modes (16 x 2) is known to work; 48 tested OK. -->
 <vdd_settings>
   <monitors><count>1</count></monitors>
   <gpu><friendlyname>default</friendlyname></gpu>
   <global>
-    <g_refresh_rate>30</g_refresh_rate>
     <g_refresh_rate>60</g_refresh_rate>
-    <g_refresh_rate>90</g_refresh_rate>
     <g_refresh_rate>120</g_refresh_rate>
   </global>
   <resolutions>
-    <resolution><width>480</width><height>640</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>640</width><height>480</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>600</width><height>800</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>800</width><height>600</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1024</width><height>768</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>768</width><height>1024</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1280</width><height>720</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>720</width><height>1280</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>800</width><height>1280</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1280</width><height>800</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>768</width><height>1366</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1366</width><height>768</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1600</width><height>900</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>900</width><height>1600</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1600</width><height>1000</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1000</width><height>1600</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>800</width><height>1280</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1920</width><height>1080</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1080</width><height>1920</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1200</width><height>1920</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1920</width><height>1200</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2048</width><height>1536</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1536</width><height>2048</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2160</width><height>1620</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1620</width><height>2160</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1668</width><height>2224</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2224</width><height>1668</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1080</width><height>2340</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>1200</width><height>1920</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>2000</width><height>1200</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>1200</width><height>2000</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>2340</width><height>1080</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1080</width><height>2400</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2400</width><height>1080</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1440</width><height>2560</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2560</width><height>1440</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>1080</width><height>2340</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>2560</width><height>1600</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1600</width><height>2560</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2732</width><height>2048</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2048</width><height>2732</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>2800</width><height>1752</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>1752</width><height>2800</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>1848</width><height>2960</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2960</width><height>1848</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>3200</width><height>2000</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2000</width><height>3200</height><refresh_rate>60</refresh_rate></resolution>
-    <resolution><width>2160</width><height>3840</height><refresh_rate>60</refresh_rate></resolution>
+    <resolution><width>2560</width><height>1440</height><refresh_rate>60</refresh_rate></resolution>
     <resolution><width>3840</width><height>2160</height><refresh_rate>60</refresh_rate></resolution>
   </resolutions>
   <options>

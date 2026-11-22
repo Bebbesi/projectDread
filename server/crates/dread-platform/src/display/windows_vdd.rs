@@ -1,8 +1,8 @@
 //! Windows backend: a real IddCx virtual monitor provided by the bundled,
 //! signed, MIT-licensed *Virtual Display Driver* (hardware id `Root\MttVDD`).
 //!
-//! STATUS: written against the Win32 documentation and the driver's source;
-//! it has NOT been compiled or run on Windows yet (see docs/PLATFORMS.md).
+//! STATUS: verified on Windows 11 — Extend (attach/reconfigure/detach) and
+//! Duplicate work with a real phone (see docs/TESTING.md).
 //!
 //! How it works
 //! * The installer installs the driver with one monitor and a mode list that
@@ -54,8 +54,8 @@ fn adapters() -> Vec<Adapter> {
         out.push(Adapter {
             device_name: from_wide(&dd.DeviceName),
             device_string: from_wide(&dd.DeviceString),
-            attached: dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP != 0,
-            primary: dd.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE != 0,
+            attached: (dd.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP).0 != 0,
+            primary: (dd.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE).0 != 0,
         });
     }
     out
@@ -140,8 +140,12 @@ pub struct WindowsVdd {
 }
 
 impl WindowsVdd {
+    fn detect() -> Option<String> {
+        adapters().into_iter().find(|a| VDD_NAMES.iter().any(|n| a.device_string.contains(n))).map(|a| a.device_name)
+    }
+
     pub fn new() -> Result<Self> {
-        let device = adapters().into_iter().find(|a| VDD_NAMES.iter().any(|n| a.device_string.contains(n))).map(|a| a.device_name);
+        let device = Self::detect();
         match &device {
             Some(d) => info!(device = %d, "virtual display driver found"),
             None => warn!("Virtual Display Driver not installed: extended mode unavailable (duplicate mode still works)"),
@@ -227,7 +231,18 @@ impl DisplayBackend for WindowsVdd {
     fn activate(&mut self, s: &DisplaySettings) -> Result<ActiveDisplay> {
         match s.mode {
             DisplayMode::Extend => {
+                // The driver's GDI name (\\.\DISPLAYn) changes whenever the driver restarts.
+                if let Some(d) = Self::detect() {
+                    self.device = Some(d);
+                }
                 let dev = self.vdd()?.to_string();
+                if modes(&dev).is_empty() {
+                    bail!(
+                        "the virtual display driver is installed but has no monitor ({dev}). Windows usually rejects it when \
+                         C:\\VirtualDisplayDriver\\vdd_settings.xml lists too many modes; reinstall DREAD or restart the \
+                         \"Virtual Display Driver\" device in Device Manager. Driver log: C:\\VirtualDisplayDriver\\Logs"
+                    );
+                }
                 let (w, h) = s.effective_size();
                 let (mw, mh, hz) = self.best_mode(&dev, w, h, s.refresh);
                 let others: Vec<OutputInfo> = self.outputs()?.into_iter().filter(|o| !o.is_dread).collect();

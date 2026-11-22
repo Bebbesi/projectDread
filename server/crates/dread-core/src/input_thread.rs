@@ -111,7 +111,17 @@ fn run(e: Engine, rx: Receiver<InputCmd>, mut settings: InputSettings) {
             None
         }
     };
-    while let Ok(cmd) = rx.recv() {
+    loop {
+        let cmd = match rx.recv_timeout(std::time::Duration::from_millis(30)) {
+            Ok(c) => c,
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                if let Some(i) = inj.as_mut() {
+                    i.keepalive();
+                }
+                continue;
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+        };
         match cmd {
             InputCmd::Event(ev) => {
                 if let Some(i) = inj.as_mut() {
@@ -128,6 +138,9 @@ fn run(e: Engine, rx: Receiver<InputCmd>, mut settings: InputSettings) {
                     i.release_all();
                 }
             }
+        }
+        if let Some(i) = inj.as_mut() {
+            i.keepalive();
         }
     }
 }

@@ -53,10 +53,18 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\build-windows.ps1
 It builds `dread.exe`, downloads the pinned Virtual Display Driver release,
 nefcon and an FFmpeg build, and produces `dist\DREAD-Setup-1.0.0.exe`.
 
-*Not yet run: the Windows code has never been compiled. Expect to fix compile
-errors in `dread-platform/src/display/windows_vdd.rs`,
-`dread-platform/src/input/windows.rs` and the `windows` crate feature list on
-first build.*
+Verified on Windows 11 with Rust stable (MSVC) and Inno Setup 6. Inno Setup
+installed per user (e.g. `winget install JRSoftware.InnoSetup`) lands in
+`%LOCALAPPDATA%\Programs\Inno Setup 6`; add that folder to `PATH` first so
+the script finds `ISCC.exe`. The downloads are cached in `build\downloads`.
+
+Windows diagnostics (no tablet needed):
+
+```powershell
+cd server
+cargo run --release -p dread-platform --example win_displays   # adapters, monitors, modes
+cargo run --release -p dread-platform --example win_attach     # attach DREAD display 1920x1200 for 3 s, then detach
+```
 
 ## Android client
 

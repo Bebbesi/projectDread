@@ -33,11 +33,14 @@ Uninstall: `sudo packaging/linux/install-system-files.sh --remove`, delete
 the binary/AppImage, `~/.config/dread/` (settings, certificate, paired
 devices) and `~/.config/autostart/dread.desktop` if present.
 
-## Windows server (installer not yet built — see BUILD.md)
+## Windows server
 
 1. Run `DREAD-Setup-1.0.0.exe` as administrator. Keep *Install the virtual
    display driver* checked for Extended mode and *Allow through firewall*.
 2. Start DREAD from the Start menu.
+
+When updating, quit DREAD first (including the tray icon) so the installer
+can replace `dread.exe`.
 
 The installer bundles `dread.exe`, FFmpeg, the Virtual Display Driver and
 nefcon. Uninstall from *Settings → Apps*: removes the driver, firewall rules

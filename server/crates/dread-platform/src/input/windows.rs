@@ -1,7 +1,8 @@
 //! Windows input injection.
 //!
-//! STATUS: written against the Win32 documentation; NOT yet compiled or run
-//! on Windows (see docs/PLATFORMS.md).
+//! STATUS: touch (InjectTouchInput) and absolute mouse verified on Windows 11;
+//! pen, keys and text injection NOT yet
+//! verified in apps (see docs/TESTING.md).
 //!
 //! * Touch and pen use synthetic pointer devices
 //!   (`CreateSyntheticPointerDevice` / `InjectSyntheticPointerInput`, Windows
@@ -14,7 +15,7 @@ use super::InputSettings;
 use anyhow::{bail, Result};
 use dread_proto::{Contact, InputEvent, PenTool, TouchAction, MOUSE_LEFT, MOUSE_MIDDLE, MOUSE_RIGHT, PEN_BUTTON1, PEN_BUTTON2, PEN_CONTACT, PEN_IN_RANGE};
 use windows::Win32::Foundation::POINT;
-use windows::Win32::UI::Controls::{HSYNTHETICPOINTERDEVICE, POINTER_FEEDBACK_DEFAULT};
+use windows::Win32::UI::Controls::{CreateSyntheticPointerDevice, DestroySyntheticPointerDevice, HSYNTHETICPOINTERDEVICE, POINTER_FEEDBACK_DEFAULT, POINTER_TYPE_INFO, POINTER_TYPE_INFO_0};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::Input::Pointer::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
@@ -22,7 +23,6 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 const MAX_TOUCH: usize = 10;
 
 pub struct WindowsInjector {
-    touch_dev: HSYNTHETICPOINTERDEVICE,
     pen_dev: HSYNTHETICPOINTERDEVICE,
     touch_down: Vec<(u8, POINT)>,
     pen_down: bool,
@@ -31,6 +31,9 @@ pub struct WindowsInjector {
     buttons: u8,
     pressed_keys: Vec<u16>,
     last_rect: Option<(i32, i32, u32, u32)>,
+    /// Last injected frame of every contact still held, re-sent by [`Self::keepalive`].
+    held: Vec<POINTER_TOUCH_INFO>,
+    last_touch: std::time::Instant,
 }
 
 // handles are only used from the input thread
@@ -88,9 +91,15 @@ fn mouse_input(dx: i32, dy: i32, data: i32, flags: MOUSE_EVENT_FLAGS) -> INPUT {
 impl WindowsInjector {
     pub fn new() -> Result<Self> {
         // SAFETY: plain API calls; failure is reported via Result
-        let touch_dev = unsafe { CreateSyntheticPointerDevice(PT_TOUCH, MAX_TOUCH as u32, POINTER_FEEDBACK_DEFAULT) }?;
+        // Touch uses InjectTouchInput: its coordinates are virtual-desktop pixels on
+        // every monitor. A synthetic touch device (CreateSyntheticPointerDevice) is
+        // bound to the primary monitor instead: a touch at x=2112 on a DREAD display
+        // to the right of a 1920-px primary landed at x=192 (verified on Windows 11).
+        unsafe { InitializeTouchInjection(MAX_TOUCH as u32, TOUCH_FEEDBACK_DEFAULT) }?;
+        // NOTE: pen still uses a synthetic device and probably has the same
+        // primary-monitor binding — not verified (no stylus device tested).
         let pen_dev = unsafe { CreateSyntheticPointerDevice(PT_PEN, 1, POINTER_FEEDBACK_DEFAULT) }?;
-        Ok(Self { touch_dev, pen_dev, touch_down: vec![], pen_down: false, pen_in_range: false, last_pen: None, buttons: 0, pressed_keys: vec![], last_rect: None })
+        Ok(Self { pen_dev, touch_down: vec![], pen_down: false, pen_in_range: false, last_pen: None, buttons: 0, pressed_keys: vec![], last_rect: None, held: vec![], last_touch: std::time::Instant::now() })
     }
 
     fn map(rect: (i32, i32, u32, u32), x: u16, y: u16) -> POINT {
@@ -183,7 +192,7 @@ impl WindowsInjector {
     }
 
     fn touch(&mut self, action: TouchAction, changed: u8, contacts: &[Contact], rect: (i32, i32, u32, u32)) -> Result<()> {
-        let mut frames: Vec<POINTER_TYPE_INFO> = vec![];
+        let mut frames: Vec<POINTER_TOUCH_INFO> = vec![];
         let lifting = matches!(action, TouchAction::Up | TouchAction::Cancel);
         for c in contacts.iter().take(MAX_TOUCH) {
             let p = Self::map(rect, c.x, c.y);
@@ -197,7 +206,8 @@ impl WindowsInjector {
                 POINTER_FLAG_UPDATE | POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT
             };
             let mut ti = POINTER_TOUCH_INFO {
-                pointerInfo: Self::pointer_info(c.id as u32, p, flags, PT_TOUCH),
+                // InjectTouchInput rejects frames that set ptPixelLocationRaw (E_INVALIDARG)
+                pointerInfo: POINTER_INFO { pointerType: PT_TOUCH, pointerId: c.id as u32, pointerFlags: flags, ptPixelLocation: p, ..Default::default() },
                 touchFlags: TOUCH_FLAG_NONE,
                 touchMask: TOUCH_MASK_CONTACTAREA | TOUCH_MASK_PRESSURE,
                 pressure: ((c.pressure as u32 * 1024) / 65535).max(1),
@@ -205,7 +215,7 @@ impl WindowsInjector {
             };
             let r = ((c.major as f64 / 65535.0) * rect.2 as f64 / 2.0).max(2.0) as i32;
             ti.rcContact = windows::Win32::Foundation::RECT { left: p.x - r, top: p.y - r, right: p.x + r, bottom: p.y + r };
-            frames.push(POINTER_TYPE_INFO { r#type: PT_TOUCH, Anonymous: POINTER_TYPE_INFO_0 { touchInfo: ti } });
+            frames.push(ti);
             if up {
                 self.touch_down.retain(|(id, _)| *id != c.id);
             } else if !was_down {
@@ -215,8 +225,53 @@ impl WindowsInjector {
         if frames.is_empty() {
             return Ok(());
         }
-        // SAFETY: frames are fully initialised and belong to our touch device
-        unsafe { InjectSyntheticPointerInput(self.touch_dev, &frames) }.map_err(|e| anyhow::anyhow!("inject touch: {e}"))
+        self.inject_touch(frames)
+    }
+
+    fn inject_touch(&mut self, mut frames: Vec<POINTER_TOUCH_INFO>) -> Result<()> {
+        // SAFETY: frames are fully initialised; touch injection was initialised in new()
+        let r = unsafe { InjectTouchInput(&frames) };
+        if r.is_err() {
+            // Our idea of which contacts are down no longer matches Windows (typically a
+            // held contact that Windows timed out). Resync: every contact still touching
+            // is injected again as a fresh DOWN, so touch keeps working instead of every
+            // following frame being rejected.
+            self.touch_down.clear();
+            frames.retain(|f| f.pointerInfo.pointerFlags & POINTER_FLAG_UP == POINTER_FLAG_NONE);
+            for f in frames.iter_mut() {
+                f.pointerInfo.pointerFlags = POINTER_FLAG_DOWN | POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT;
+                self.touch_down.push((f.pointerInfo.pointerId as u8, f.pointerInfo.ptPixelLocation));
+            }
+            self.held.clear();
+            if frames.is_empty() {
+                return Ok(());
+            }
+            // SAFETY: as above
+            if let Err(e) = unsafe { InjectTouchInput(&frames) } {
+                self.touch_down.clear();
+                bail!("inject touch: {e}");
+            }
+        }
+        self.held = frames.into_iter().filter(|f| f.pointerInfo.pointerFlags & POINTER_FLAG_UP == POINTER_FLAG_NONE).collect();
+        for f in self.held.iter_mut() {
+            f.pointerInfo.pointerFlags = POINTER_FLAG_UPDATE | POINTER_FLAG_INRANGE | POINTER_FLAG_INCONTACT;
+        }
+        self.last_touch = std::time::Instant::now();
+        Ok(())
+    }
+
+    /// Windows cancels an injected contact that is not updated for a short while, but
+    /// Android sends nothing while a finger rests still — so a press-and-hold (or a slow
+    /// tap) was silently lost, and the next frame for that contact was rejected.
+    /// Call this regularly; it repeats the last frame of every held contact.
+    pub fn keepalive(&mut self) {
+        if self.held.is_empty() || self.last_touch.elapsed() < std::time::Duration::from_millis(50) {
+            return;
+        }
+        let frames = self.held.clone();
+        if let Err(e) = self.inject_touch(frames) {
+            tracing::debug!("touch keepalive: {e:#}");
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -275,6 +330,7 @@ impl WindowsInjector {
             let _ = self.touch(TouchAction::Cancel, 0, &downs, rect);
         }
         self.touch_down.clear();
+        self.held.clear();
         if self.pen_in_range {
             if let Some((tool, p)) = self.last_pen {
                 let _ = self.pen(tool, 0, p, 0, 0, 0, &InputSettings::default());
@@ -293,7 +349,6 @@ impl Drop for WindowsInjector {
     fn drop(&mut self) {
         // SAFETY: devices were created by us
         unsafe {
-            DestroySyntheticPointerDevice(self.touch_dev);
             DestroySyntheticPointerDevice(self.pen_dev);
         }
     }

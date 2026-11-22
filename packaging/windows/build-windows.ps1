@@ -4,7 +4,7 @@
 #   Virtual Display Driver 25.7.23 (MIT)  https://github.com/VirtualDrivers/Virtual-Display-Driver
 #   nefcon 1.14.0 (BSD-3-Clause)          https://github.com/nefarius/nefcon
 #   FFmpeg essentials build (GPL-3.0)     https://www.gyan.dev/ffmpeg/builds/
-# STATUS: not yet run on Windows (see docs/PLATFORMS.md).
+# STATUS: verified on Windows 11 (see docs/TESTING.md).
 $ErrorActionPreference = "Stop"
 $Root = Resolve-Path "$PSScriptRoot\..\.."
 $Stage = "$Root\build\windows"
@@ -12,7 +12,10 @@ $Dl = "$Root\build\downloads"
 New-Item -ItemType Directory -Force -Path $Stage, $Dl, "$Stage\licenses" | Out-Null
 
 Push-Location "$Root\server"
-cargo build --release -p dread-app
+$ErrorActionPreference = "Continue"
+cargo build --release -p dread-app 2>&1 | Out-Host
+if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+$ErrorActionPreference = "Stop"
 Pop-Location
 Copy-Item -Force "$Root\server\target\release\dread.exe" "$Stage\dread.exe"
 

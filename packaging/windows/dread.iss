@@ -1,6 +1,6 @@
 ; DREAD Server — Inno Setup script (https://jrsoftware.org/isinfo.php)
 ; Build: run build-windows.ps1 (it stages files into ..\..\build\windows and calls ISCC).
-; STATUS: not yet built on Windows (see docs/PLATFORMS.md).
+; STATUS: built and installed on Windows 11 (see docs/TESTING.md).
 
 #define AppVersion "1.0.0"
 #define Stage "..\..\build\windows"
