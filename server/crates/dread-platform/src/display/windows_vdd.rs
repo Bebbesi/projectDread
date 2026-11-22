@@ -85,6 +85,18 @@ fn modes(device: &str) -> Vec<(u32, u32, u32)> {
     v
 }
 
+/// Current desktop rectangle (x, y, width, height) of a display, read live from
+/// Windows. Monitors move when another display changes mode (e.g. a fullscreen
+/// game switching the primary monitor's resolution), so cached positions go stale.
+pub fn live_rect(device: &str) -> Option<(i32, i32, u32, u32)> {
+    let dm = current_mode(device)?;
+    if dm.dmPelsWidth == 0 || dm.dmPelsHeight == 0 {
+        return None;
+    }
+    let (x, y) = position(&dm);
+    Some((x, y, dm.dmPelsWidth, dm.dmPelsHeight))
+}
+
 fn position(dm: &DEVMODEW) -> (i32, i32) {
     // SAFETY: dmPosition is the active union member for display devices
     let p = unsafe { dm.Anonymous1.Anonymous2.dmPosition };

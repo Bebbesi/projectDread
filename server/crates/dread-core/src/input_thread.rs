@@ -111,6 +111,7 @@ fn run(e: Engine, rx: Receiver<InputCmd>, mut settings: InputSettings) {
             None
         }
     };
+    let mut live: Option<(String, std::time::Instant, (i32, i32, u32, u32))> = None;
     loop {
         let cmd = match rx.recv_timeout(std::time::Duration::from_millis(30)) {
             Ok(c) => c,
@@ -125,7 +126,16 @@ fn run(e: Engine, rx: Receiver<InputCmd>, mut settings: InputSettings) {
         match cmd {
             InputCmd::Event(ev) => {
                 if let Some(i) = inj.as_mut() {
-                    let rect = e.active_display().map(|d| (d.output.x, d.output.y, d.output.width, d.output.height));
+                    // Re-read the display's position from Windows (at most every 250 ms):
+                    // it moves when another monitor changes mode, e.g. a game going fullscreen.
+                    let rect = e.active_display().map(|d| {
+                        let cached = (d.output.x, d.output.y, d.output.width, d.output.height);
+                        if live.as_ref().map_or(true, |(name, at, _)| *name != d.output.name || at.elapsed() > std::time::Duration::from_millis(250)) {
+                            let r = dread_platform::display::windows_vdd::live_rect(&d.output.name).unwrap_or(cached);
+                            live = Some((d.output.name.clone(), std::time::Instant::now(), r));
+                        }
+                        live.as_ref().map_or(cached, |l| l.2)
+                    });
                     if let Err(err) = i.handle(&ev, &settings, rect) {
                         error!("input injection failed: {err:#}");
                     }
